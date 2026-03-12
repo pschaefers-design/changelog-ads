@@ -13,7 +13,6 @@
             --apple-gray: #86868B;
             --apple-border: #D2D2D7;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--apple-bg);
@@ -21,27 +20,21 @@
             margin: 0; padding: 40px 20px;
             display: flex; justify-content: center;
         }
-
         .container { width: 100%; max-width: 800px; }
-        
         header { margin-bottom: 40px; }
         h1 { font-size: 32px; font-weight: 600; margin: 0; letter-spacing: -0.8px; }
         p { color: var(--apple-gray); margin-top: 8px; }
-
         .card {
             background: var(--apple-card);
             padding: 32px;
             border-radius: 20px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.04);
         }
-
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
-
         label {
             display: block; font-size: 13px; font-weight: 600;
             color: var(--apple-gray); margin-bottom: 8px;
         }
-
         input, select, textarea {
             width: 100%; padding: 14px;
             border: 1px solid var(--apple-border);
@@ -50,82 +43,60 @@
             box-sizing: border-box; outline: none;
             transition: all 0.2s ease;
         }
-
         input:focus, select:focus { border-color: var(--apple-accent); background: white; }
-
         .tag-group { margin-top: 24px; }
         .tag-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        
         .tag {
             padding: 8px 16px; background: #F2F2F7;
             border-radius: 20px; font-size: 14px;
             cursor: pointer; transition: all 0.2s;
             border: 1px solid transparent;
         }
-
         .tag.active { background: var(--apple-accent); color: white; }
-
         .btn-save {
             width: 100%; background: var(--apple-accent); color: white;
             border: none; padding: 18px; border-radius: 14px;
             font-size: 17px; font-weight: 600; cursor: pointer;
             margin-top: 32px; transition: transform 0.1s;
         }
-
         .btn-save:active { transform: scale(0.98); }
-        
         #status {
             text-align: center; margin-top: 16px; font-size: 14px;
             color: var(--apple-accent); display: none;
         }
+
+        /* Passwort-Screen */
+        #password-screen {
+            display: flex; align-items: center; justify-content: center;
+            height: 100vh; background: #f4f4f4;
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;
+        }
+        #password-screen.hidden { display: none; }
     </style>
 </head>
 <body>
-<!-- PASSWORTSCHUTZ START -->
-<div id="password-screen" style="display:flex; align-items:center; justify-content:center; height:100vh; background:#f4f4f4; font-family:sans-serif; position:fixed; top:0; left:0; width:100%; z-index:9999;">
+
+<!-- PASSWORTSCHUTZ -->
+<div id="password-screen">
   <div style="background:white; padding:40px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.1); text-align:center;">
     <h2 style="margin-bottom:20px;">🔒 Zugang geschützt</h2>
-    <input id="pw-input" type="password" placeholder="Passwort eingeben" style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:220px;" />
+    <input id="pw-input" type="password" placeholder="Passwort eingeben"
+      style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:220px;" />
     <br><br>
-    <button onclick="checkPassword()" style="padding:10px 30px; background:#333; color:white; border:none; border-radius:6px; font-size:16px; cursor:pointer;">Einloggen</button>
+    <button onclick="checkPassword()"
+      style="padding:10px 30px; background:#0071E3; color:white; border:none; border-radius:6px; font-size:16px; cursor:pointer;">
+      Einloggen
+    </button>
     <p id="pw-error" style="color:red; margin-top:10px; display:none;">Falsches Passwort!</p>
   </div>
 </div>
 
-<script>
-  if (sessionStorage.getItem("eingeloggt") === "ja") {
-    document.getElementById("password-screen").style.display = "none";
-  }
-
-  async function checkPassword() {
-    const eingabe = document.getElementById("pw-input").value;
-
-    const response = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: eingabe })
-    });
-
-    if (response.ok) {
-      sessionStorage.setItem("eingeloggt", "ja");
-      document.getElementById("password-screen").style.display = "none";
-    } else {
-      document.getElementById("pw-error").style.display = "block";
-    }
-  }
-
-  document.getElementById("pw-input").addEventListener("keypress", function(e) {
-    if (e.key === "Enter") checkPassword();
-  });
-</script>
-<!-- PASSWORTSCHUTZ END -->
-    
-<div class="container">
+<!-- HAUPTINHALT -->
+<div class="container" id="main-content" style="display:none;">
     <header>
         <h1>AdLog Pro</h1>
         <p>Präzise Dokumentation für Werbekonten</p>
     </header>
-
     <div class="card">
         <div class="grid">
             <div>
@@ -153,83 +124,97 @@
                 <input type="text" id="campaign" placeholder="z.B. DE_Search_Brand">
             </div>
         </div>
-
         <label>Änderungsbeschreibung</label>
         <textarea id="description" rows="3" placeholder="Was wurde geändert?"></textarea>
-
         <div style="margin-top: 20px;">
             <label>Notizen / Effekte</label>
             <textarea id="notes" rows="2" placeholder="Optionale Beobachtungen..."></textarea>
         </div>
-
         <div class="tag-group">
             <label>Tags</label>
-            <div class="tag-list" id="tagList">
-                </div>
+            <div class="tag-list" id="tagList"></div>
         </div>
-
         <button class="btn-save" onclick="sendData()">Änderung speichern</button>
         <div id="status">Verbindung zum Sheet wird hergestellt...</div>
     </div>
 </div>
 
 <script>
-    // Konfiguration (Hier kannst du Tags einfach im Code ändern)
-    const availableTags = ['Budget', 'Zielgruppe', 'Creative', 'Bidding', 'Keywords', 'Ausschlüsse'];
-    let selectedTags = [];
+  // ── Passwortschutz ──────────────────────────────────────────
+  if (sessionStorage.getItem("eingeloggt") === "ja") {
+    document.getElementById("password-screen").classList.add("hidden");
+    document.getElementById("main-content").style.display = "block";
+  }
 
-    // Setup
-    document.getElementById('date').valueAsDate = new Date();
-    const tagContainer = document.getElementById('tagList');
-    
-    availableTags.forEach(t => {
-        const span = document.createElement('span');
-        span.className = 'tag';
-        span.innerText = t;
-        span.onclick = () => {
-            span.classList.toggle('active');
-            if(selectedTags.includes(t)) selectedTags = selectedTags.filter(i => i !== t);
-            else selectedTags.push(t);
-        };
-        tagContainer.appendChild(span);
+  async function checkPassword() {
+    const eingabe = document.getElementById("pw-input").value;
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: eingabe })
     });
-
-    async function sendData() {
-        const btn = document.querySelector('.btn-save');
-        const status = document.getElementById('status');
-        
-        const payload = {
-            date: document.getElementById('date').value,
-            platform: document.getElementById('platform').value,
-            account: document.getElementById('account').value,
-            campaign: document.getElementById('campaign').value,
-            description: document.getElementById('description').value,
-            notes: document.getElementById('notes').value,
-            tags: selectedTags.join(', ')
-        };
-
-        if(!payload.description) return alert("Bitte eine Beschreibung eingeben.");
-
-        btn.disabled = true;
-        btn.innerText = "Speichert...";
-        status.style.display = "block";
-
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwawA5UnJ-6_k9ajA9TAroTgt2qTslQXzJBNkrAWRF6VbiCl7mirkISGpdDD3fcIblb/exec"; // <--- HIER DEINE URL EINSETZEN
-
-        try {
-            await fetch(WEB_APP_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(payload)
-            });
-            alert("Erfolgreich geloggt!");
-            location.reload(); // Seite neu laden für nächsten Eintrag
-        } catch (e) {
-            alert("Fehler: " + e);
-            btn.disabled = false;
-            btn.innerText = "Erneut versuchen";
-        }
+    if (response.ok) {
+      sessionStorage.setItem("eingeloggt", "ja");
+      document.getElementById("password-screen").classList.add("hidden");
+      document.getElementById("main-content").style.display = "block";
+    } else {
+      document.getElementById("pw-error").style.display = "block";
     }
+  }
+
+  document.getElementById("pw-input").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") checkPassword();
+  });
+
+  // ── App-Logik ───────────────────────────────────────────────
+  const availableTags = ['Budget', 'Zielgruppe', 'Creative', 'Bidding', 'Keywords', 'Ausschlüsse'];
+  let selectedTags = [];
+
+  document.getElementById('date').valueAsDate = new Date();
+  const tagContainer = document.getElementById('tagList');
+  availableTags.forEach(t => {
+    const span = document.createElement('span');
+    span.className = 'tag';
+    span.innerText = t;
+    span.onclick = () => {
+      span.classList.toggle('active');
+      if (selectedTags.includes(t)) selectedTags = selectedTags.filter(i => i !== t);
+      else selectedTags.push(t);
+    };
+    tagContainer.appendChild(span);
+  });
+
+  async function sendData() {
+    const btn = document.querySelector('.btn-save');
+    const status = document.getElementById('status');
+    const payload = {
+      date: document.getElementById('date').value,
+      platform: document.getElementById('platform').value,
+      account: document.getElementById('account').value,
+      campaign: document.getElementById('campaign').value,
+      description: document.getElementById('description').value,
+      notes: document.getElementById('notes').value,
+      tags: selectedTags.join(', ')
+    };
+    if (!payload.description) return alert("Bitte eine Beschreibung eingeben.");
+    btn.disabled = true;
+    btn.innerText = "Speichert...";
+    status.style.display = "block";
+
+    try {
+      await fetch("/api/save", {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      alert("Erfolgreich geloggt!");
+      location.reload();
+    } catch (e) {
+      alert("Fehler: " + e);
+      btn.disabled = false;
+      btn.innerText = "Erneut versuchen";
+    }
+  }
 </script>
 
 </body>
