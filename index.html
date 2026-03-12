@@ -81,7 +81,45 @@
     </style>
 </head>
 <body>
+<!-- PASSWORTSCHUTZ START -->
+<div id="password-screen" style="display:flex; align-items:center; justify-content:center; height:100vh; background:#f4f4f4; font-family:sans-serif; position:fixed; top:0; left:0; width:100%; z-index:9999;">
+  <div style="background:white; padding:40px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.1); text-align:center;">
+    <h2 style="margin-bottom:20px;">🔒 Zugang geschützt</h2>
+    <input id="pw-input" type="password" placeholder="Passwort eingeben" style="padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:220px;" />
+    <br><br>
+    <button onclick="checkPassword()" style="padding:10px 30px; background:#333; color:white; border:none; border-radius:6px; font-size:16px; cursor:pointer;">Einloggen</button>
+    <p id="pw-error" style="color:red; margin-top:10px; display:none;">Falsches Passwort!</p>
+  </div>
+</div>
 
+<script>
+  if (sessionStorage.getItem("eingeloggt") === "ja") {
+    document.getElementById("password-screen").style.display = "none";
+  }
+
+  async function checkPassword() {
+    const eingabe = document.getElementById("pw-input").value;
+
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: eingabe })
+    });
+
+    if (response.ok) {
+      sessionStorage.setItem("eingeloggt", "ja");
+      document.getElementById("password-screen").style.display = "none";
+    } else {
+      document.getElementById("pw-error").style.display = "block";
+    }
+  }
+
+  document.getElementById("pw-input").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") checkPassword();
+  });
+</script>
+<!-- PASSWORTSCHUTZ END -->
+    
 <div class="container">
     <header>
         <h1>AdLog Pro</h1>
