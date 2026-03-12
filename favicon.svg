@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Hintergrund -->
+  <rect width="32" height="32" rx="8" fill="#0071E3"/>
+  <!-- Dokument -->
+  <rect x="7" y="5" width="14" height="18" rx="2" fill="white"/>
+  <!-- Eselsohr -->
+  <path d="M17 5 L21 9 L17 9 Z" fill="#A8CFFF"/>
+  <rect x="17" y="5" width="4" height="4" rx="1" fill="#5AB0FF"/>
+  <!-- Linien im Dokument -->
+  <line x1="10" y1="13" x2="18" y2="13" stroke="#0071E3" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="10" y1="16" x2="18" y2="16" stroke="#0071E3" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Haken (Checkmark) unten rechts -->
+  <circle cx="22" cy="22" r="7" fill="#34C759"/>
+  <polyline points="18.5,22 21,24.5 25.5,19.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
