@@ -1,44 +1,67 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
+
 export default async function handler(req, res) {
-  const WEB_APP_URL = process.env.GOOGLE_SCRIPT_URL;
-
   try {
-    if (req.method === "GET") {
-      const response = await fetch(WEB_APP_URL, { method: "GET" });
-      const text = await response.text();
-      console.log("Apps Script GET response:", text);
+    if (req.method === 'GET') {
+      const { data, error } = await supabase
+        .from('followups')
+        .select('*, log:chg_id(platform, account, campaign, description, notes, tags)')
+        .in('status', ['offen', 'erinnert'])
+        .order('followup_date');
 
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch {
-        return res.status(500).json({ success: false, error: "Ungültige Antwort: " + text });
-      }
-      return res.status(200).json(result);
+      if (error) throw error;
+
+      const followups = data.map(f => ({
+        fuId: f.id,
+        chgId: f.chg_id,
+        followupDate: f.followup_date,
+        status: f.status,
+        log: f.log || {}
+      }));
+
+      return res.status(200).json({ success: true, followups });
     }
 
-    if (req.method === "POST") {
-      const body = { ...req.body, type: "followup" };
-      console.log("Followup POST body:", JSON.stringify(body));
+    if (req.method === 'POST') {
+      const { fuId, chgId, followupDate, observation, result, learning } = req.body;
 
-      const response = await fetch(WEB_APP_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      // Neues Followup anlegen
+      if (chgId && followupDate) {
+        const { count } = await supabase
+          .from('followups')
+          .select('*', { count: 'exact', head: true });
 
-      const text = await response.text();
-      console.log("Apps Script followup response:", text);
+        const id = 'FU-' + String((count || 0) + 1).padStart(3, '0');
 
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch {
-        return res.status(500).json({ success: false, error: "Ungültige Antwort: " + text });
+        const { error } = await supabase.from('followups').insert({
+          id,
+          chg_id: chgId,
+          followup_date: followupDate,
+          status: 'offen'
+        });
+
+        if (error) throw error;
+        return res.status(200).json({ success: true, fuId: id });
       }
-      return res.status(200).json(result);
+
+      // Bestehendes Followup abschließen
+      if (fuId) {
+        const { error } = await supabase
+          .from('followups')
+          .update({ observation, result, learning, status: 'abgeschlossen' })
+          .eq('id', fuId);
+
+        if (error) throw error;
+        return res.status(200).json({ success: true });
+      }
     }
 
-    res.status(405).json({ error: "Method not allowed" });
+    res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
     res.status(500).json({ success: false, error: e.toString() });
   }
