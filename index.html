@@ -312,7 +312,7 @@
     location.reload();
   }
 
-  async function saveFollowupAndClose() {
+async function saveFollowupAndClose() {
     if (!selectedFollowupDate || !lastSavedId) return closeModal();
     const btn = document.getElementById('confirmBtn');
     btn.disabled = true;
@@ -324,6 +324,7 @@
         body: JSON.stringify({
           chgId: lastSavedId,
           followupDate: selectedFollowupDate
+          // type wird in /api/followup.js automatisch ergänzt
         })
       });
     } catch(e) { console.error(e); }
