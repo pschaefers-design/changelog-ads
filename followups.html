@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdLog Pro – Followups</title>
+    <style>
+        :root {
+            --apple-bg: #F5F5F7;
+            --apple-card: #FFFFFF;
+            --apple-accent: #0071E3;
+            --apple-text: #1D1D1F;
+            --apple-gray: #86868B;
+            --apple-border: #D2D2D7;
+            --green: #34C759;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--apple-bg);
+            color: var(--apple-text);
+            margin: 0; padding: 40px 20px;
+            display: flex; justify-content: center;
+        }
+        .container { width: 100%; max-width: 800px; }
+        header { margin-bottom: 40px; display: flex; align-items: flex-start; justify-content: space-between; }
+        h1 { font-size: 32px; font-weight: 600; margin: 0; letter-spacing: -0.8px; }
+        header p { color: var(--apple-gray); margin-top: 8px; }
+        .nav-link {
+            font-size: 14px; font-weight: 500; color: var(--apple-accent);
+            text-decoration: none; padding: 8px 16px;
+            border: 1px solid var(--apple-accent);
+            border-radius: 20px; white-space: nowrap; margin-top: 4px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover { background: var(--apple-accent); color: white; }
+
+        /* Followup-Karten */
+        .followup-card {
+            background: white; border-radius: 16px;
+            padding: 24px; margin-bottom: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--apple-accent);
+        }
+        .followup-card.overdue { border-left-color: #FF3B30; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .ids { display: flex; gap: 8px; align-items: center; }
+        .badge {
+            font-size: 12px; font-weight: 600; padding: 4px 10px;
+            border-radius: 20px; font-family: monospace;
+        }
+        .badge-chg { background: #F0F7FF; color: var(--apple-accent); }
+        .badge-fu { background: #F5F5F7; color: var(--apple-gray); }
+        .badge-overdue { background: #FFF0EF; color: #FF3B30; }
+        .due-date { font-size: 13px; color: var(--apple-gray); }
+        .due-date.overdue { color: #FF3B30; font-weight: 600; }
+
+        .change-summary { margin-bottom: 16px; }
+        .change-summary .meta {
+            font-size: 12px; color: var(--apple-gray); margin-bottom: 4px;
+        }
+        .change-summary .description {
+            font-size: 15px; color: var(--apple-text); line-height: 1.4;
+        }
+
+        .feedback-section { border-top: 1px solid var(--apple-border); padding-top: 16px; }
+        .feedback-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        label {
+            display: block; font-size: 12px; font-weight: 600;
+            color: var(--apple-gray); margin-bottom: 6px;
+        }
+        textarea, select {
+            width: 100%; padding: 11px 13px;
+            border: 1px solid var(--apple-border);
+            border-radius: 10px; font-size: 14px;
+            background: #FBFBFD; box-sizing: border-box;
+            outline: none; transition: border-color 0.2s;
+            resize: vertical; font-family: inherit;
+        }
+        textarea:focus, select:focus { border-color: var(--apple-accent); background: white; }
+        .btn-save {
+            background: var(--apple-accent); color: white;
+            border: none; padding: 12px 24px; border-radius: 10px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-save:hover { opacity: 0.85; }
+        .btn-save:disabled { opacity: 0.5; cursor: default; }
+
+        /* Leer-Zustand */
+        .empty-state {
+            text-align: center; padding: 80px 20px;
+            color: var(--apple-gray);
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+        .empty-state h2 { font-size: 20px; font-weight: 600; color: var(--apple-text); margin: 0 0 8px; }
+        .empty-state p { font-size: 15px; margin: 0; }
+
+        /* Ladeanimation */
+        .loading { text-align: center; padding: 60px; color: var(--apple-gray); font-size: 15px; }
+
+        /* Erfolg-Inline */
+        .saved-banner {
+            background: #F0FFF4; border: 1px solid #34C759;
+            border-radius: 10px; padding: 12px 16px;
+            font-size: 14px; color: #1A7F37; font-weight: 500;
+            display: none; margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="main-content" style="display:none;">
+    <header>
+        <div>
+            <h1>Followups</h1>
+            <p>Offene Wiedervorlagen dokumentieren</p>
+        </div>
+        <a href="/" class="nav-link">← Neue Änderung</a>
+    </header>
+
+    <div id="followupList">
+        <div class="loading">Lade offene Followups…</div>
+    </div>
+</div>
+
+<script>
+  // ── Auth-Check ──────────────────────────────────────────────
+  if (sessionStorage.getItem("eingeloggt") !== "ja") {
+    window.location.href = "/";
+  } else {
+    document.getElementById("main-content").style.display = "block";
+    loadFollowups();
+  }
+
+  // ── Followups laden ─────────────────────────────────────────
+  async function loadFollowups() {
+    try {
+      const response = await fetch('/api/followup');
+      const result = await response.json();
+      renderFollowups(result.followups || []);
+    } catch (e) {
+      document.getElementById('followupList').innerHTML =
+        '<p style="color:red;text-align:center;">Fehler beim Laden: ' + e + '</p>';
+    }
+  }
+
+  function renderFollowups(followups) {
+    const container = document.getElementById('followupList');
+
+    if (followups.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">🎉</div>
+          <h2>Alles erledigt!</h2>
+          <p>Keine offenen Wiedervorlagen. Gut gemacht.</p>
+        </div>`;
+      return;
+    }
+
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    container.innerHTML = followups.map(fu => {
+      const dueDate = new Date(fu.followupDate);
+      dueDate.setHours(0,0,0,0);
+      const isOverdue = dueDate < today;
+      const dueDateStr = dueDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const log = fu.log || {};
+      const meta = [log.platform, log.account, log.campaign].filter(Boolean).join(' · ');
+
+      return `
+        <div class="followup-card ${isOverdue ? 'overdue' : ''}" id="card-${fu.fuId}">
+          <div class="card-header">
+            <div class="ids">
+              <span class="badge badge-chg">${fu.chgId}</span>
+              <span class="badge badge-fu">${fu.fuId}</span>
+              ${isOverdue ? '<span class="badge badge-overdue">Überfällig</span>' : ''}
+            </div>
+            <span class="due-date ${isOverdue ? 'overdue' : ''}">📅 ${dueDateStr}</span>
+          </div>
+
+          <div class="change-summary">
+            ${meta ? `<div class="meta">${meta}</div>` : ''}
+            <div class="description">${log.description || '–'}</div>
+          </div>
+
+          <div class="feedback-section">
+            <div class="feedback-grid">
+              <div>
+                <label>Beobachtung</label>
+                <textarea id="obs-${fu.fuId}" rows="3" placeholder="Was hast du bemerkt?"></textarea>
+              </div>
+              <div>
+                <label>Ergebnis</label>
+                <select id="result-${fu.fuId}">
+                  <option value="">– Bewertung –</option>
+                  <option value="positiv">✅ Positiv</option>
+                  <option value="neutral">➖ Neutral</option>
+                  <option value="negativ">❌ Negativ</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-bottom:12px;">
+              <label>Learning / Notiz</label>
+              <textarea id="learning-${fu.fuId}" rows="2" placeholder="Was nimmst du mit?"></textarea>
+            </div>
+            <button class="btn-save" onclick="saveFeedback('${fu.fuId}')">Abschließen</button>
+            <div class="saved-banner" id="banner-${fu.fuId}">✓ Gespeichert und abgeschlossen!</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Feedback speichern ──────────────────────────────────────
+  async function saveFeedback(fuId) {
+    const btn = event.target;
+    const observation = document.getElementById('obs-' + fuId).value;
+    const result = document.getElementById('result-' + fuId).value;
+    const learning = document.getElementById('learning-' + fuId).value;
+
+    btn.disabled = true;
+    btn.innerText = 'Speichert…';
+
+    try {
+      await fetch('/api/followup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'followup',
+          fuId,
+          observation,
+          result,
+          learning
+        })
+      });
+
+      const banner = document.getElementById('banner-' + fuId);
+      banner.style.display = 'block';
+      btn.style.display = 'none';
+
+      // Karte nach 1.5s ausblenden
+      setTimeout(() => {
+        const card = document.getElementById('card-' + fuId);
+        card.style.transition = 'opacity 0.4s, transform 0.4s';
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(-8px)';
+        setTimeout(() => card.remove(), 400);
+      }, 1500);
+
+    } catch (e) {
+      alert('Fehler: ' + e);
+      btn.disabled = false;
+      btn.innerText = 'Abschließen';
+    }
+  }
+</script>
+
+</body>
+</html>
