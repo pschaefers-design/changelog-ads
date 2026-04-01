@@ -144,7 +144,7 @@
     }
   }
 
-  function renderFollowups(followups) {
+function renderFollowups(followups) {
     const container = document.getElementById('followupList');
 
     if (followups.length === 0) {
@@ -180,7 +180,9 @@
 
           <div class="change-summary">
             ${meta ? `<div class="meta">${meta}</div>` : ''}
-            <div class="description">${log.description || '–'}</div>
+            <div class="description" style="font-size:15px;font-weight:600;margin-bottom:6px;">${log.description || '–'}</div>
+            ${log.notes ? `<div style="font-size:13px;color:#86868B;margin-bottom:4px;">📝 ${log.notes}</div>` : ''}
+            ${log.tags ? `<div style="margin-top:6px;">${log.tags.split(',').map(t => `<span style="display:inline-block;background:#F2F2F7;border-radius:20px;padding:3px 10px;font-size:12px;margin-right:4px;">${t.trim()}</span>`).join('')}</div>` : ''}
           </div>
 
           <div class="feedback-section">
