@@ -3,16 +3,22 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(WEB_APP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body)
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req.body),
     });
 
-    const result = await response.json();
+    const text = await response.text();
+    console.log("Apps Script save response:", text);
 
-    // ID vom Apps Script ans Frontend weitergeben
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch {
+      return res.status(500).json({ success: false, error: "Ungültige Antwort: " + text });
+    }
+
     res.status(200).json({ success: true, id: result.id });
-
   } catch (e) {
     res.status(500).json({ success: false, error: e.toString() });
   }
