@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230071E3'/%3E%3Crect x='7' y='5' width='14' height='18' rx='2' fill='white'/%3E%3Cpath d='M17 5 L21 9 L17 9 Z' fill='%235AB0FF'/%3E%3Crect x='17' y='5' width='4' height='4' rx='1' fill='%235AB0FF'/%3E%3Cline x1='10' y1='13' x2='18' y2='13' stroke='%230071E3' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='10' y1='16' x2='18' y2='16' stroke='%230071E3' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='22' r='7' fill='%2334C759'/%3E%3Cpolyline points='18.5%2C22 21%2C24.5 25.5%2C19.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
-    
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AdLog Pro</title>
@@ -23,9 +23,18 @@
             display: flex; justify-content: center;
         }
         .container { width: 100%; max-width: 800px; }
-        header { margin-bottom: 40px; }
+        header { margin-bottom: 40px; display: flex; align-items: flex-start; justify-content: space-between; }
         h1 { font-size: 32px; font-weight: 600; margin: 0; letter-spacing: -0.8px; }
-        p { color: var(--apple-gray); margin-top: 8px; }
+        header p { color: var(--apple-gray); margin-top: 8px; }
+        .nav-link {
+            font-size: 14px; font-weight: 500; color: var(--apple-accent);
+            text-decoration: none; padding: 8px 16px;
+            border: 1px solid var(--apple-accent);
+            border-radius: 20px; white-space: nowrap;
+            margin-top: 4px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover { background: var(--apple-accent); color: white; }
         .card {
             background: var(--apple-card);
             padding: 32px;
@@ -45,7 +54,7 @@
             box-sizing: border-box; outline: none;
             transition: all 0.2s ease;
         }
-        input:focus, select:focus { border-color: var(--apple-accent); background: white; }
+        input:focus, select:focus, textarea:focus { border-color: var(--apple-accent); background: white; }
         .tag-group { margin-top: 24px; }
         .tag-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
         .tag {
@@ -59,9 +68,10 @@
             width: 100%; background: var(--apple-accent); color: white;
             border: none; padding: 18px; border-radius: 14px;
             font-size: 17px; font-weight: 600; cursor: pointer;
-            margin-top: 32px; transition: transform 0.1s;
+            margin-top: 32px; transition: transform 0.1s, opacity 0.2s;
         }
         .btn-save:active { transform: scale(0.98); }
+        .btn-save:disabled { opacity: 0.6; }
         #status {
             text-align: center; margin-top: 16px; font-size: 14px;
             color: var(--apple-accent); display: none;
@@ -74,6 +84,64 @@
             position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;
         }
         #password-screen.hidden { display: none; }
+
+        /* ── Erfolgs-Modal ──────────────────────────────────────── */
+        .modal-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal {
+            background: white; border-radius: 20px;
+            padding: 36px; max-width: 440px; width: 90%;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.15);
+            animation: modalIn 0.25s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.92) translateY(12px); opacity: 0; }
+            to   { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .modal-icon { font-size: 40px; margin-bottom: 12px; }
+        .modal h2 { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
+        .modal-id {
+            display: inline-block;
+            background: #F0F7FF; color: var(--apple-accent);
+            font-size: 15px; font-weight: 600;
+            padding: 6px 14px; border-radius: 20px;
+            margin-bottom: 20px; font-family: monospace; letter-spacing: 0.5px;
+        }
+        .modal p { color: var(--apple-gray); font-size: 15px; margin: 0 0 20px; }
+        .followup-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .followup-btn {
+            padding: 13px 18px; border-radius: 12px; font-size: 15px;
+            font-weight: 500; cursor: pointer; border: 1.5px solid var(--apple-border);
+            background: #FAFAFA; text-align: left; transition: all 0.15s;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .followup-btn:hover { border-color: var(--apple-accent); background: #F0F7FF; color: var(--apple-accent); }
+        .followup-btn.selected { border-color: var(--apple-accent); background: #F0F7FF; color: var(--apple-accent); }
+        .followup-btn .days { font-size: 12px; color: var(--apple-gray); margin-left: auto; }
+        .followup-btn.selected .days { color: var(--apple-accent); opacity: 0.7; }
+        .modal-actions { display: flex; gap: 12px; }
+        .btn-secondary {
+            flex: 1; padding: 14px; border-radius: 12px;
+            border: 1.5px solid var(--apple-border); background: white;
+            font-size: 15px; font-weight: 500; cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-secondary:hover { background: #F5F5F7; }
+        .btn-primary {
+            flex: 1; padding: 14px; border-radius: 12px;
+            border: none; background: var(--apple-accent); color: white;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-primary:hover { opacity: 0.88; }
     </style>
 </head>
 <body>
@@ -96,8 +164,11 @@
 <!-- HAUPTINHALT -->
 <div class="container" id="main-content" style="display:none;">
     <header>
-        <h1>AdLog Pro</h1>
-        <p>Präzise Dokumentation für Werbekonten</p>
+        <div>
+            <h1>AdLog Pro</h1>
+            <p>Präzise Dokumentation für Werbekonten</p>
+        </div>
+        <a href="/followups.html" class="nav-link">📋 Followups</a>
     </header>
     <div class="card">
         <div class="grid">
@@ -141,6 +212,32 @@
     </div>
 </div>
 
+<!-- ── ERFOLGS-MODAL ──────────────────────────────────────────── -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal">
+    <div class="modal-icon">✅</div>
+    <h2>Gespeichert!</h2>
+    <div class="modal-id" id="savedId">CHG-001</div>
+    <p>Möchtest du eine Wiedervorlage anlegen, um den Effekt später zu dokumentieren?</p>
+    <div class="followup-options">
+      <button class="followup-btn" onclick="selectFollowup(7, this)">
+        In 7 Tagen erinnern <span class="days">+7d</span>
+      </button>
+      <button class="followup-btn" onclick="selectFollowup(14, this)">
+        In 14 Tagen erinnern <span class="days">+14d</span>
+      </button>
+      <button class="followup-btn" onclick="selectFollowup(30, this)">
+        In 30 Tagen erinnern <span class="days">+30d</span>
+      </button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Ohne Wiedervorlage</button>
+      <button class="btn-primary" id="confirmFollowup" onclick="confirmFollowup()" disabled
+        style="opacity:0.5; cursor:default;">Wiedervorlage anlegen</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // ── Passwortschutz ──────────────────────────────────────────
   if (sessionStorage.getItem("eingeloggt") === "ja") {
@@ -168,7 +265,7 @@
     if (e.key === "Enter") checkPassword();
   });
 
-  // ── App-Logik ───────────────────────────────────────────────
+  // ── Tags ────────────────────────────────────────────────────
   const availableTags = ['Budget', 'Zielgruppe', 'Creative', 'Bidding', 'Keywords', 'Ausschlüsse'];
   let selectedTags = [];
 
@@ -186,6 +283,48 @@
     tagContainer.appendChild(span);
   });
 
+  // ── Followup-Auswahl im Modal ────────────────────────────────
+  let selectedFollowupDays = null;
+  let lastSavedId = null;
+
+  function selectFollowup(days, btn) {
+    document.querySelectorAll('.followup-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedFollowupDays = days;
+    const confirmBtn = document.getElementById('confirmFollowup');
+    confirmBtn.disabled = false;
+    confirmBtn.style.opacity = '1';
+    confirmBtn.style.cursor = 'pointer';
+  }
+
+  function closeModal() {
+    document.getElementById('successModal').classList.remove('visible');
+    location.reload();
+  }
+
+  async function confirmFollowup() {
+    if (!selectedFollowupDays || !lastSavedId) return;
+
+    const followupDate = new Date();
+    followupDate.setDate(followupDate.getDate() + selectedFollowupDays);
+    const dateStr = followupDate.toISOString().split('T')[0];
+
+    await fetch('/api/followup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'followup',
+        fuId: 'neu', // wird serverseitig vergeben
+        chgId: lastSavedId,
+        followupDate: dateStr,
+        observation: '', result: '', learning: ''
+      })
+    });
+
+    closeModal();
+  }
+
+  // ── Speichern ────────────────────────────────────────────────
   async function sendData() {
     const btn = document.querySelector('.btn-save');
     const status = document.getElementById('status');
@@ -199,22 +338,39 @@
       tags: selectedTags.join(', ')
     };
     if (!payload.description) return alert("Bitte eine Beschreibung eingeben.");
+
     btn.disabled = true;
     btn.innerText = "Speichert...";
     status.style.display = "block";
 
     try {
-      await fetch("/api/save", {
+      const response = await fetch("/api/save", {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      alert("Erfolgreich geloggt!");
-      location.reload();
+      const result = await response.json();
+
+      // ID merken und Modal öffnen
+      lastSavedId = result.id || "CHG-???";
+      document.getElementById('savedId').innerText = lastSavedId;
+      selectedFollowupDays = null;
+      document.querySelectorAll('.followup-btn').forEach(b => b.classList.remove('selected'));
+      const confirmBtn = document.getElementById('confirmFollowup');
+      confirmBtn.disabled = true;
+      confirmBtn.style.opacity = '0.5';
+      confirmBtn.style.cursor = 'default';
+
+      status.style.display = "none";
+      btn.disabled = false;
+      btn.innerText = "Änderung speichern";
+      document.getElementById('successModal').classList.add('visible');
+
     } catch (e) {
       alert("Fehler: " + e);
       btn.disabled = false;
       btn.innerText = "Erneut versuchen";
+      status.style.display = "none";
     }
   }
 </script>
