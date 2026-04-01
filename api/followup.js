@@ -10,7 +10,8 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      // Followup-Eintrag aktualisieren
+      // Neues Followup anlegen ODER bestehendes aktualisieren
+      // Unterschied: neues Followup hat "followupDate", Update hat "fuId"
       const response = await fetch(WEB_APP_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -19,6 +20,8 @@ export default async function handler(req, res) {
       const result = await response.json();
       return res.status(200).json(result);
     }
+
+    res.status(405).json({ error: 'Method not allowed' });
 
   } catch (e) {
     res.status(500).json({ success: false, error: e.toString() });
