@@ -7,14 +7,18 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   try {
-    const { date, platform, account, campaign, description, notes, tags } = req.body;
+    const { type = 'CHG', date, platform, account, campaign, description, notes, tags } = req.body;
 
-    // Nächste ID berechnen
-    const { count } = await supabase
+    const prefix = type === 'OBS' ? 'OBS' : 'CHG';
+
+    // Nächste ID nur für diesen Prefix zählen
+    const { data: existing } = await supabase
       .from('log')
-      .select('*', { count: 'exact', head: true });
+      .select('id')
+      .like('id', prefix + '-%');
 
-    const id = 'CHG-' + String((count || 0) + 1).padStart(3, '0');
+    const nextNum = (existing ? existing.length : 0) + 1;
+    const id = prefix + '-' + String(nextNum).padStart(3, '0');
 
     const campaignNorm = campaign
       ? campaign.toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_')
@@ -23,7 +27,8 @@ export default async function handler(req, res) {
     const { error } = await supabase.from('log').insert({
       id, date, platform, account,
       campaign, campaign_norm: campaignNorm,
-      description, notes, tags
+      description, notes, tags,
+      entry_type: prefix   // Spalte in Supabase hinzufügen (siehe Migrationsanleitung)
     });
 
     if (error) throw error;
