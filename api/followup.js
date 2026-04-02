@@ -13,8 +13,8 @@ export default async function handler(req, res) {
         const q = req.query.search.toLowerCase();
         const { data, error } = await supabase
           .from('log')
-          .select('id, description, date, platform, account, entry_type')
-          .or(`id.ilike.%${q}%,description.ilike.%${q}%,account.ilike.%${q}%`)
+          .select('id, description, date, platform, account, campaign, notes, tags, entry_type')
+          .or(`id.ilike.%${q}%,description.ilike.%${q}%,account.ilike.%${q}%,campaign.ilike.%${q}%,campaign_norm.ilike.%${q}%,notes.ilike.%${q}%,tags.ilike.%${q}%,platform.ilike.%${q}%`)
           .order('date', { ascending: false })
           .limit(10);
         if (error) throw error;
