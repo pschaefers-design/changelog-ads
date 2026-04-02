@@ -105,6 +105,77 @@
             font-size: 14px; color: #1A7F37; font-weight: 500;
             display: none; margin-top: 12px;
         }
+
+        /* Zwischennotiz-Modal */
+        .note-modal-overlay {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+            z-index: 1000; align-items: center; justify-content: center;
+        }
+        .note-modal-overlay.visible { display: flex; }
+        .note-modal {
+            background: white; border-radius: 20px; padding: 32px;
+            max-width: 500px; width: 92%;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.15);
+            animation: modalIn 0.25s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.92) translateY(12px); opacity: 0; }
+            to   { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .note-modal h2 { font-size: 20px; font-weight: 600; margin: 0 0 6px; }
+        .note-modal p { color: var(--apple-gray); font-size: 14px; margin: 0 0 20px; }
+
+        /* Suche */
+        .search-wrap { position: relative; margin-bottom: 12px; }
+        .search-wrap input {
+            width: 100%; padding: 11px 13px; border: 1px solid var(--apple-border);
+            border-radius: 10px; font-size: 14px; background: #FBFBFD;
+            box-sizing: border-box; outline: none; transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        .search-wrap input:focus { border-color: var(--apple-accent); background: white; }
+        .search-results {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: white; border: 1px solid var(--apple-border);
+            border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            z-index: 10; max-height: 220px; overflow-y: auto; margin-top: 4px;
+        }
+        .search-item {
+            padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #F2F2F7;
+            transition: background 0.1s;
+        }
+        .search-item:last-child { border-bottom: none; }
+        .search-item:hover { background: #F0F7FF; }
+        .search-item .id-badge {
+            font-size: 11px; font-weight: 600; font-family: monospace;
+            padding: 2px 7px; border-radius: 10px; margin-right: 6px;
+        }
+        .search-item .id-badge.chg { background: #F0F7FF; color: var(--apple-accent); }
+        .search-item .id-badge.obs { background: #F0FFF4; color: #1A7F37; }
+        .search-item .desc { font-size: 13px; color: var(--apple-text); }
+        .search-item .meta { font-size: 11px; color: var(--apple-gray); margin-top: 2px; }
+        .selected-entry {
+            background: #F0F7FF; border: 1px solid var(--apple-accent);
+            border-radius: 10px; padding: 10px 14px; margin-bottom: 16px;
+            font-size: 13px;
+        }
+        .selected-entry .label { font-size: 11px; color: var(--apple-gray); margin-bottom: 4px; }
+        .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+        .btn-secondary {
+            flex: 1; padding: 13px; border-radius: 12px;
+            border: 1.5px solid var(--apple-border); background: white;
+            font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit;
+        }
+        .btn-primary {
+            flex: 1; padding: 13px; border-radius: 12px;
+            border: none; background: var(--apple-accent); color: white;
+            font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+            transition: opacity 0.15s;
+        }
+        .btn-primary:disabled { opacity: 0.4; cursor: default; }
+        .btn-primary:hover:not(:disabled) { opacity: 0.88; }
     </style>
 </head>
 <body>
@@ -115,7 +186,18 @@
             <h1>Followups</h1>
             <p>Offene Wiedervorlagen dokumentieren</p>
         </div>
-        <a href="/" class="nav-link">← Neue Änderung</a>
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-top:4px;">
+          <button onclick="openNoteModal()" style="
+            font-size:14px;font-weight:500;color:#34C759;
+            padding:8px 16px;border:1px solid #34C759;border-radius:20px;
+            background:white;cursor:pointer;font-family:inherit;white-space:nowrap;
+            transition:all 0.2s;
+          " onmouseover="this.style.background='#34C759';this.style.color='white'"
+             onmouseout="this.style.background='white';this.style.color='#34C759'">
+            ✏️ Zwischennotiz
+          </button>
+          <a href="/" class="nav-link">← Neue Änderung</a>
+        </div>
     </header>
 
     <div id="followupList">
@@ -123,9 +205,64 @@
     </div>
 </div>
 
+<!-- ZWISCHENNOTIZ-MODAL -->
+<div class="note-modal-overlay" id="noteModal">
+  <div class="note-modal">
+    <h2>✏️ Zwischennotiz</h2>
+    <p>Wähle eine Änderung oder Beobachtung, der du diese Notiz zuordnen möchtest.</p>
+
+    <div class="search-wrap">
+      <input type="text" id="noteSearch" placeholder="ID oder Text suchen… z.B. CHG-012 oder 'broad match'"
+        oninput="searchEntries(this.value)" autocomplete="off">
+      <div class="search-results" id="searchResults" style="display:none;"></div>
+    </div>
+
+    <div id="selectedEntryDisplay" style="display:none;">
+      <div class="selected-entry">
+        <div class="label">Ausgewählt</div>
+        <div id="selectedEntryText"></div>
+      </div>
+    </div>
+
+    <div>
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--apple-gray);margin-bottom:6px;">Beobachtung</label>
+      <textarea id="noteObs" rows="3" placeholder="Was hast du bemerkt?" style="width:100%;padding:11px 13px;border:1px solid var(--apple-border);border-radius:10px;font-size:14px;background:#FBFBFD;box-sizing:border-box;resize:vertical;font-family:inherit;outline:none;"></textarea>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:12px;">
+      <div style="flex:1;">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--apple-gray);margin-bottom:6px;">Ergebnis (optional)</label>
+        <select id="noteResult" style="width:100%;padding:11px 13px;border:1px solid var(--apple-border);border-radius:10px;font-size:14px;background:#FBFBFD;box-sizing:border-box;font-family:inherit;">
+          <option value="">– noch offen –</option>
+          <option value="positiv">✅ Positiv</option>
+          <option value="neutral">➖ Neutral</option>
+          <option value="negativ">❌ Negativ</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--apple-gray);margin-bottom:6px;">Learning / Notiz (optional)</label>
+      <textarea id="noteLearning" rows="2" placeholder="Was nimmst du mit?" style="width:100%;padding:11px 13px;border:1px solid var(--apple-border);border-radius:10px;font-size:14px;background:#FBFBFD;box-sizing:border-box;resize:vertical;font-family:inherit;outline:none;"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeNoteModal()">Abbrechen</button>
+      <button class="btn-primary" id="saveNoteBtn" disabled onclick="saveNote()">Notiz speichern</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  // ── Auth-Check ──────────────────────────────────────────────
-  if (sessionStorage.getItem("eingeloggt") !== "ja") {
+  // ── Auth (localStorage, 30 Tage) ────────────────────────────
+  const AUTH_KEY = "adlog_auth";
+  function isLoggedIn() {
+    try {
+      const raw = localStorage.getItem(AUTH_KEY);
+      if (!raw) return false;
+      const { expires } = JSON.parse(raw);
+      return Date.now() < expires;
+    } catch { return false; }
+  }
+  if (!isLoggedIn()) {
     window.location.href = "/";
   } else {
     document.getElementById("main-content").style.display = "block";
@@ -254,6 +391,109 @@ function renderFollowups(followups) {
       btn.innerText = 'Abschließen';
     }
   }
+  // ── Zwischennotiz-Modal ─────────────────────────────────────
+  let selectedNoteTarget = null;
+  let searchTimeout = null;
+
+  function openNoteModal() {
+    selectedNoteTarget = null;
+    document.getElementById('noteSearch').value = '';
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('selectedEntryDisplay').style.display = 'none';
+    document.getElementById('noteObs').value = '';
+    document.getElementById('noteResult').value = '';
+    document.getElementById('noteLearning').value = '';
+    document.getElementById('saveNoteBtn').disabled = true;
+    document.getElementById('noteModal').classList.add('visible');
+  }
+
+  function closeNoteModal() {
+    document.getElementById('noteModal').classList.remove('visible');
+  }
+
+  function searchEntries(q) {
+    clearTimeout(searchTimeout);
+    if (q.length < 2) {
+      document.getElementById('searchResults').style.display = 'none';
+      return;
+    }
+    searchTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/followup?search=' + encodeURIComponent(q));
+        const data = await res.json();
+        renderSearchResults(data.results || []);
+      } catch(e) { console.error(e); }
+    }, 250);
+  }
+
+  function renderSearchResults(results) {
+    const container = document.getElementById('searchResults');
+    if (!results.length) {
+      container.innerHTML = '<div class="search-item" style="color:var(--apple-gray);">Keine Ergebnisse</div>';
+      container.style.display = 'block';
+      return;
+    }
+    container.innerHTML = results.map(r => {
+      const isOBS = r.entry_type === 'OBS' || r.id.startsWith('OBS');
+      const badgeClass = isOBS ? 'obs' : 'chg';
+      const dateStr = r.date ? new Date(r.date).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' }) : '';
+      return `<div class="search-item" onclick="selectEntry('${r.id}', '${r.description.replace(/'/g, "\\'")}', '${r.account || ''}', '${dateStr}')">
+        <span class="id-badge ${badgeClass}">${r.id}</span>
+        <span class="desc">${r.description}</span>
+        <div class="meta">${[r.account, r.platform, dateStr].filter(Boolean).join(' · ')}</div>
+      </div>`;
+    }).join('');
+    container.style.display = 'block';
+  }
+
+  function selectEntry(id, desc, account, date) {
+    selectedNoteTarget = id;
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('noteSearch').value = '';
+    document.getElementById('selectedEntryText').innerHTML =
+      `<strong>${id}</strong> – ${desc}` + (account ? `<span style="color:var(--apple-gray);font-size:12px;"> · ${account}</span>` : '');
+    document.getElementById('selectedEntryDisplay').style.display = 'block';
+    document.getElementById('saveNoteBtn').disabled = false;
+  }
+
+  async function saveNote() {
+    const obs = document.getElementById('noteObs').value;
+    if (!obs || !selectedNoteTarget) return;
+    const btn = document.getElementById('saveNoteBtn');
+    btn.disabled = true;
+    btn.innerText = 'Speichert…';
+    try {
+      await fetch('/api/followup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chgId: selectedNoteTarget,
+          fuType: 'note',
+          observation: obs,
+          result: document.getElementById('noteResult').value,
+          learning: document.getElementById('noteLearning').value
+        })
+      });
+      closeNoteModal();
+      // Kurze Bestätigung
+      const banner = document.createElement('div');
+      banner.style.cssText = 'position:fixed;top:20px;right:20px;background:#F0FFF4;border:1px solid #34C759;border-radius:10px;padding:12px 20px;font-size:14px;color:#1A7F37;font-weight:500;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.1);';
+      banner.innerText = '✓ Zwischennotiz gespeichert';
+      document.body.appendChild(banner);
+      setTimeout(() => banner.remove(), 2500);
+    } catch(e) {
+      alert('Fehler: ' + e);
+      btn.disabled = false;
+      btn.innerText = 'Notiz speichern';
+    }
+  }
+
+  // Klick außerhalb Search schließt Dropdown
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.search-wrap')) {
+      document.getElementById('searchResults').style.display = 'none';
+    }
+  });
 </script>
 
 </body>
