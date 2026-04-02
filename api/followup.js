@@ -8,7 +8,20 @@ const supabase = createClient(
 export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
-      // Alle offenen Wiedervorlagen
+      // ── Suche nach Einträgen für Zwischennotiz-Modal ──────────
+      if (req.query && req.query.search !== undefined) {
+        const q = req.query.search.toLowerCase();
+        const { data, error } = await supabase
+          .from('log')
+          .select('id, description, date, platform, account, entry_type')
+          .or(`id.ilike.%${q}%,description.ilike.%${q}%,account.ilike.%${q}%`)
+          .order('date', { ascending: false })
+          .limit(10);
+        if (error) throw error;
+        return res.status(200).json({ success: true, results: data });
+      }
+
+      // ── Alle offenen Wiedervorlagen ───────────────────────────
       const { data: fuData, error: fuErr } = await supabase
         .from('followups')
         .select('*, log:chg_id(id, platform, account, campaign, description, notes, tags, entry_type)')
@@ -80,19 +93,6 @@ export default async function handler(req, res) {
         if (error) throw error;
         return res.status(200).json({ success: true });
       }
-    }
-
-    // ── Suche nach CHG/OBS-Einträgen für Zwischennotiz-Modal ──
-    if (req.method === 'GET' && req.query?.search !== undefined) {
-      const q = req.query.search.toLowerCase();
-      const { data, error } = await supabase
-        .from('log')
-        .select('id, description, date, platform, account, entry_type')
-        .or(`id.ilike.%${q}%,description.ilike.%${q}%,account.ilike.%${q}%`)
-        .order('date', { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      return res.status(200).json({ success: true, results: data });
     }
 
     res.status(405).json({ error: 'Method not allowed' });
