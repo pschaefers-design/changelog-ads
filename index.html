@@ -140,6 +140,16 @@
         }
         .btn-primary:hover { opacity: 0.88; }
         .btn-primary:disabled { opacity: 0.4; cursor: default; }
+
+        /* Typ-Toggle */
+        .type-btn {
+            padding: 10px 22px; border-radius: 20px; font-size: 14px; font-weight: 600;
+            border: 1.5px solid var(--apple-border); background: white; cursor: pointer;
+            font-family: inherit; color: var(--apple-gray); transition: all 0.15s;
+        }
+        .type-btn.active {
+            background: var(--apple-accent); color: white; border-color: var(--apple-accent);
+        }
     </style>
 </head>
 <body>
@@ -166,6 +176,17 @@
         </div>
         <a href="/followups.html" class="nav-link">📋 Followups</a>
     </header>
+
+    <!-- Typ-Toggle -->
+    <div style="display:flex;gap:10px;margin-bottom:24px;">
+      <button class="type-btn active" id="btn-chg" onclick="switchType('CHG')">
+        ✏️ Änderung
+      </button>
+      <button class="type-btn" id="btn-obs" onclick="switchType('OBS')">
+        👁 Beobachtung
+      </button>
+    </div>
+
     <div class="card">
         <div class="grid">
             <div>
@@ -193,17 +214,17 @@
                 <input type="text" id="campaign" placeholder="z.B. DE_Search_Brand">
             </div>
         </div>
-        <label>Änderungsbeschreibung</label>
+        <label id="desc-label">Änderungsbeschreibung</label>
         <textarea id="description" rows="3" placeholder="Was wurde geändert?"></textarea>
         <div style="margin-top:20px;">
-            <label>Notizen / Effekte</label>
+            <label id="notes-label">Notizen / Effekte</label>
             <textarea id="notes" rows="2" placeholder="Optionale Beobachtungen..."></textarea>
         </div>
         <div class="tag-group">
             <label>Tags</label>
             <div class="tag-list" id="tagList"></div>
         </div>
-        <button class="btn-save" onclick="sendData()">Änderung speichern</button>
+        <button class="btn-save" id="save-btn" onclick="sendData()">Änderung speichern</button>
         <div id="status">Wird gespeichert…</div>
     </div>
 </div>
@@ -211,50 +232,70 @@
 <!-- MODAL -->
 <div class="modal-overlay" id="successModal">
   <div class="modal">
-    <div class="modal-icon">✅</div>
-    <h2>Gespeichert!</h2>
+    <div class="modal-icon" id="modal-icon">✅</div>
+    <h2 id="modal-title">Gespeichert!</h2>
     <div class="modal-id" id="savedId">…</div>
-    <p>Wiedervorlage anlegen, um den Effekt später zu dokumentieren?</p>
+    <p id="modal-subtitle">Wiedervorlage anlegen, um den Effekt später zu dokumentieren?</p>
 
-    <div class="followup-options">
-      <button class="followup-btn" onclick="selectDays(7, this)">
-        In 7 Tagen erinnern <span class="days">+7d</span>
-      </button>
-      <button class="followup-btn" onclick="selectDays(14, this)">
-        In 14 Tagen erinnern <span class="days">+14d</span>
-      </button>
-      <button class="followup-btn" onclick="selectDays(30, this)">
-        In 30 Tagen erinnern <span class="days">+30d</span>
-      </button>
-    </div>
+    <div id="followup-section">
+      <div class="followup-options">
+        <button class="followup-btn" onclick="selectDays(7, this)">
+          In 7 Tagen erinnern <span class="days">+7d</span>
+        </button>
+        <button class="followup-btn" onclick="selectDays(14, this)">
+          In 14 Tagen erinnern <span class="days">+14d</span>
+        </button>
+        <button class="followup-btn" onclick="selectDays(30, this)">
+          In 30 Tagen erinnern <span class="days">+30d</span>
+        </button>
+      </div>
 
-    <div class="custom-date-row" id="customDateRow" onclick="selectCustomDate()">
-      <span>Fixes Datum wählen</span>
-      <input type="date" id="customDate"
-        onclick="event.stopPropagation()"
-        onchange="selectCustomDate()">
+      <div class="custom-date-row" id="customDateRow" onclick="selectCustomDate()">
+        <span>Fixes Datum wählen</span>
+        <input type="date" id="customDate"
+          onclick="event.stopPropagation()"
+          onchange="selectCustomDate()">
+      </div>
     </div>
 
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal()">Ohne Wiedervorlage</button>
+      <button class="btn-secondary" onclick="closeModal()" id="modal-skip-btn">Ohne Wiedervorlage</button>
       <button class="btn-primary" id="confirmBtn" disabled onclick="saveFollowupAndClose()">Wiedervorlage speichern</button>
     </div>
   </div>
 </div>
 
 <script>
-  // ── Auth ────────────────────────────────────────────────────
-  if (sessionStorage.getItem("eingeloggt") === "ja") {
+  // ── Auth (localStorage, 30 Tage) ────────────────────────────
+  const AUTH_KEY = "adlog_auth";
+  const AUTH_DAYS = 30;
+
+  function isLoggedIn() {
+    try {
+      const raw = localStorage.getItem(AUTH_KEY);
+      if (!raw) return false;
+      const { expires } = JSON.parse(raw);
+      return Date.now() < expires;
+    } catch { return false; }
+  }
+
+  function setLoggedIn() {
+    const expires = Date.now() + AUTH_DAYS * 24 * 60 * 60 * 1000;
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ expires }));
+  }
+
+  if (isLoggedIn()) {
     document.getElementById("password-screen").classList.add("hidden");
     document.getElementById("main-content").style.display = "block";
   }
+
   async function checkPassword() {
     const res = await fetch("/api/login", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password: document.getElementById("pw-input").value })
     });
     if (res.ok) {
-      sessionStorage.setItem("eingeloggt", "ja");
+      setLoggedIn();
       document.getElementById("password-screen").classList.add("hidden");
       document.getElementById("main-content").style.display = "block";
     } else {
@@ -264,6 +305,21 @@
   document.getElementById("pw-input").addEventListener("keypress", e => {
     if (e.key === "Enter") checkPassword();
   });
+
+  // ── Typ-Toggle (CHG / OBS) ───────────────────────────────────
+  let currentType = 'CHG';
+
+  function switchType(type) {
+    currentType = type;
+    const isCHG = type === 'CHG';
+    document.getElementById('btn-chg').classList.toggle('active', isCHG);
+    document.getElementById('btn-obs').classList.toggle('active', !isCHG);
+    document.getElementById('desc-label').innerText = isCHG ? 'Änderungsbeschreibung' : 'Was beobachtest du?';
+    document.getElementById('description').placeholder = isCHG ? 'Was wurde geändert?' : 'z.B. CPC steigt seit 3 Tagen, Grund unklar…';
+    document.getElementById('notes-label').innerText = isCHG ? 'Notizen / Effekte' : 'Erste Einschätzung / Hypothese';
+    document.getElementById('notes').placeholder = isCHG ? 'Optionale Beobachtungen…' : 'Optionale Hypothese…';
+    document.getElementById('save-btn').innerText = isCHG ? 'Änderung speichern' : 'Beobachtung speichern';
+  }
 
   // ── Tags ────────────────────────────────────────────────────
   const availableTags = ['Budget', 'Zielgruppe', 'Creative', 'Bidding', 'Keywords', 'Ausschlüsse'];
@@ -307,12 +363,29 @@
   }
 
   // ── Modal ────────────────────────────────────────────────────
+  function openModal(savedId, isOBS) {
+    document.getElementById('savedId').innerText = savedId;
+    document.getElementById('modal-icon').innerText = isOBS ? '👁' : '✅';
+    document.getElementById('modal-title').innerText = 'Gespeichert!';
+    document.getElementById('modal-subtitle').innerText = isOBS
+      ? 'Wiedervorlage anlegen, um die Beobachtung später zu bewerten?'
+      : 'Wiedervorlage anlegen, um den Effekt später zu dokumentieren?';
+    document.getElementById('modal-skip-btn').innerText = isOBS ? 'Ohne Wiedervorlage' : 'Ohne Wiedervorlage';
+    document.getElementById('confirmBtn').innerText = 'Wiedervorlage speichern';
+    selectedFollowupDate = null;
+    document.querySelectorAll('.followup-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('customDateRow').classList.remove('selected');
+    document.getElementById('customDate').value = '';
+    document.getElementById('confirmBtn').disabled = true;
+    document.getElementById('successModal').classList.add('visible');
+  }
+
   function closeModal() {
     document.getElementById('successModal').classList.remove('visible');
     location.reload();
   }
 
-async function saveFollowupAndClose() {
+  async function saveFollowupAndClose() {
     if (!selectedFollowupDate || !lastSavedId) return closeModal();
     const btn = document.getElementById('confirmBtn');
     btn.disabled = true;
@@ -321,11 +394,7 @@ async function saveFollowupAndClose() {
       await fetch("/api/followup", {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chgId: lastSavedId,
-          followupDate: selectedFollowupDate
-          // type wird in /api/followup.js automatisch ergänzt
-        })
+        body: JSON.stringify({ chgId: lastSavedId, followupDate: selectedFollowupDate })
       });
     } catch(e) { console.error(e); }
     closeModal();
@@ -333,7 +402,7 @@ async function saveFollowupAndClose() {
 
   // ── Haupteintrag speichern ───────────────────────────────────
   async function sendData() {
-    const btn = document.querySelector('.btn-save');
+    const btn = document.getElementById('save-btn');
     const status = document.getElementById('status');
     const description = document.getElementById('description').value;
     if (!description) return alert("Bitte eine Beschreibung eingeben.");
@@ -343,6 +412,7 @@ async function saveFollowupAndClose() {
     status.style.display = "block";
 
     const payload = {
+      type: currentType,
       date: document.getElementById('date').value,
       platform: document.getElementById('platform').value,
       account: document.getElementById('account').value,
@@ -359,21 +429,12 @@ async function saveFollowupAndClose() {
         body: JSON.stringify(payload)
       });
       const result = await response.json();
-      lastSavedId = result.id || 'CHG-???';
-
-      // Modal vorbereiten und öffnen
-      document.getElementById('savedId').innerText = lastSavedId;
-      selectedFollowupDate = null;
-      document.querySelectorAll('.followup-btn').forEach(b => b.classList.remove('selected'));
-      document.getElementById('customDateRow').classList.remove('selected');
-      document.getElementById('customDate').value = '';
-      document.getElementById('confirmBtn').disabled = true;
-      document.getElementById('confirmBtn').innerText = 'Wiedervorlage speichern';
+      lastSavedId = result.id || (currentType + '-???');
 
       status.style.display = "none";
       btn.disabled = false;
-      btn.innerText = "Änderung speichern";
-      document.getElementById('successModal').classList.add('visible');
+      btn.innerText = currentType === 'CHG' ? 'Änderung speichern' : 'Beobachtung speichern';
+      openModal(lastSavedId, currentType === 'OBS');
 
     } catch (e) {
       alert("Fehler beim Speichern: " + e);
