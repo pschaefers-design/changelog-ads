@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdLog Pro</title>
+    <style>
+        :root {
+            --apple-bg: #F5F5F7;
+            --apple-card: #FFFFFF;
+            --apple-accent: #0071E3;
+            --apple-text: #1D1D1F;
+            --apple-gray: #86868B;
+            --apple-border: #D2D2D7;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--apple-bg); color: var(--apple-text);
+            margin: 0; padding: 40px 20px;
+            display: flex; justify-content: center;
+        }
+        .container { width: 100%; max-width: 800px; }
+        header { margin-bottom: 40px; display: flex; align-items: flex-start; justify-content: space-between; }
+        h1 { font-size: 32px; font-weight: 600; margin: 0; letter-spacing: -0.8px; }
+        header p { color: var(--apple-gray); margin-top: 8px; }
+        .nav-link {
+            font-size: 14px; font-weight: 500; color: var(--apple-accent);
+            text-decoration: none; padding: 8px 16px;
+            border: 1px solid var(--apple-accent); border-radius: 20px;
+            white-space: nowrap; margin-top: 4px; transition: all 0.2s;
+        }
+        .nav-link:hover { background: var(--apple-accent); color: white; }
+        .card {
+            background: var(--apple-card); padding: 32px;
+            border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+        }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: var(--apple-gray); margin-bottom: 8px; }
+        input, select, textarea {
+            width: 100%; padding: 14px; border: 1px solid var(--apple-border);
+            border-radius: 12px; font-size: 16px; background: #FBFBFD;
+            box-sizing: border-box; outline: none; transition: all 0.2s ease;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--apple-accent); background: white; }
+        .tag-group { margin-top: 24px; }
+        .tag-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .tag {
+            padding: 8px 16px; background: #F2F2F7; border-radius: 20px;
+            font-size: 14px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
+        }
+        .tag.active { background: var(--apple-accent); color: white; }
+        .btn-save {
+            width: 100%; background: var(--apple-accent); color: white;
+            border: none; padding: 18px; border-radius: 14px;
+            font-size: 17px; font-weight: 600; cursor: pointer;
+            margin-top: 32px; transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn-save:active { transform: scale(0.98); }
+        .btn-save:disabled { opacity: 0.6; }
+        #status { text-align: center; margin-top: 16px; font-size: 14px; color: var(--apple-accent); display: none; }
+
+        #password-screen {
+            display: flex; align-items: center; justify-content: center;
+            height: 100vh; background: #f4f4f4;
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;
+        }
+        #password-screen.hidden { display: none; }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+            z-index: 1000; align-items: center; justify-content: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal {
+            background: white; border-radius: 20px; padding: 36px;
+            max-width: 460px; width: 90%;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.15);
+            animation: modalIn 0.25s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.92) translateY(12px); opacity: 0; }
+            to   { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .modal-icon { font-size: 40px; margin-bottom: 12px; }
+        .modal h2 { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
+        .modal-id {
+            display: inline-block; background: #F0F7FF; color: var(--apple-accent);
+            font-size: 15px; font-weight: 600; padding: 6px 14px; border-radius: 20px;
+            margin-bottom: 20px; font-family: monospace; letter-spacing: 0.5px;
+        }
+        .modal > p { color: var(--apple-gray); font-size: 15px; margin: 0 0 16px; }
+
+        .followup-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+        .followup-btn {
+            padding: 12px 16px; border-radius: 12px; font-size: 15px; font-weight: 500;
+            cursor: pointer; border: 1.5px solid var(--apple-border);
+            background: #FAFAFA; text-align: left; transition: all 0.15s;
+            display: flex; align-items: center; justify-content: space-between;
+            font-family: inherit;
+        }
+        .followup-btn:hover { border-color: var(--apple-accent); background: #F0F7FF; color: var(--apple-accent); }
+        .followup-btn.selected { border-color: var(--apple-accent); background: #F0F7FF; color: var(--apple-accent); }
+        .followup-btn .days { font-size: 12px; color: var(--apple-gray); }
+        .followup-btn.selected .days { color: var(--apple-accent); opacity: 0.7; }
+
+        .custom-date-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 16px; border-radius: 12px;
+            border: 1.5px solid var(--apple-border); background: #FAFAFA;
+            transition: all 0.15s; cursor: pointer; margin-bottom: 16px;
+        }
+        .custom-date-row:hover { border-color: var(--apple-accent); background: #F0F7FF; }
+        .custom-date-row.selected { border-color: var(--apple-accent); background: #F0F7FF; }
+        .custom-date-row span { font-size: 15px; font-weight: 500; flex: 1; }
+        .custom-date-row.selected span { color: var(--apple-accent); }
+        .custom-date-row input[type="date"] {
+            border: none; background: transparent; padding: 0; margin: 0;
+            font-size: 14px; width: auto; outline: none; color: var(--apple-gray);
+            cursor: pointer; font-family: inherit;
+        }
+        .custom-date-row.selected input[type="date"] { color: var(--apple-accent); }
+
+        .modal-actions { display: flex; gap: 12px; }
+        .btn-secondary {
+            flex: 1; padding: 14px; border-radius: 12px;
+            border: 1.5px solid var(--apple-border); background: white;
+            font-size: 15px; font-weight: 500; cursor: pointer;
+            font-family: inherit; transition: background 0.15s;
+        }
+        .btn-secondary:hover { background: #F5F5F7; }
+        .btn-primary {
+            flex: 1; padding: 14px; border-radius: 12px;
+            border: none; background: var(--apple-accent); color: white;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+            font-family: inherit; transition: opacity 0.15s;
+        }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-primary:disabled { opacity: 0.4; cursor: default; }
+
+        /* Typ-Toggle */
+        .type-btn {
+            padding: 10px 22px; border-radius: 20px; font-size: 14px; font-weight: 600;
+            border: 1.5px solid var(--apple-border); background: white; cursor: pointer;
+            font-family: inherit; color: var(--apple-gray); transition: all 0.15s;
+        }
+        .type-btn.active {
+            background: var(--apple-accent); color: white; border-color: var(--apple-accent);
+        }
+    </style>
+</head>
+<body>
+
+<div id="password-screen">
+  <div style="background:white;padding:40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);text-align:center;">
+    <h2 style="margin-bottom:20px;">🔒 Zugang geschützt</h2>
+    <input id="pw-input" type="password" placeholder="Passwort eingeben"
+      style="padding:10px;font-size:16px;border:1px solid #ccc;border-radius:6px;width:220px;" />
+    <br><br>
+    <button onclick="checkPassword()"
+      style="padding:10px 30px;background:#0071E3;color:white;border:none;border-radius:6px;font-size:16px;cursor:pointer;">
+      Einloggen
+    </button>
+    <p id="pw-error" style="color:red;margin-top:10px;display:none;">Falsches Passwort!</p>
+  </div>
+</div>
+
+<div class="container" id="main-content" style="display:none;">
+    <header>
+        <div>
+            <h1>AdLog Pro</h1>
+            <p>Präzise Dokumentation für Werbekonten</p>
+        </div>
+        <a href="/followups.html" class="nav-link">📋 Followups</a>
+    </header>
+
+    <!-- Typ-Toggle -->
+    <div style="display:flex;gap:10px;margin-bottom:24px;">
+      <button class="type-btn active" id="btn-chg" onclick="switchType('CHG')">
+        ✏️ Änderung
+      </button>
+      <button class="type-btn" id="btn-obs" onclick="switchType('OBS')">
+        👁 Beobachtung
+      </button>
+    </div>
+
+    <div class="card">
+        <div class="grid">
+            <div>
+                <label>Datum</label>
+                <input type="date" id="date">
+            </div>
+            <div>
+                <label>Plattform</label>
+                <select id="platform">
+                    <option>Google Ads</option>
+                    <option>Microsoft Advertising</option>
+                    <option>LinkedIn Ads</option>
+                    <option>Meta Ads</option>
+                </select>
+            </div>
+            <div>
+                <label>Werbekonto</label>
+                <select id="account">
+                    <option>Cargo International</option>
+                    <option>SimpleLogistik</option>
+                </select>
+            </div>
+            <div>
+                <label>Kampagne</label>
+                <input type="text" id="campaign" placeholder="z.B. DE_Search_Brand">
+            </div>
+        </div>
+        <label id="desc-label">Änderungsbeschreibung</label>
+        <textarea id="description" rows="3" placeholder="Was wurde geändert?"></textarea>
+        <div style="margin-top:20px;">
+            <label id="notes-label">Notizen / Effekte</label>
+            <textarea id="notes" rows="2" placeholder="Optionale Beobachtungen..."></textarea>
+        </div>
+        <div class="tag-group">
+            <label>Tags</label>
+            <div class="tag-list" id="tagList"></div>
+        </div>
+        <button class="btn-save" id="save-btn" onclick="sendData()">Änderung speichern</button>
+        <div id="status">Wird gespeichert…</div>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal">
+    <div class="modal-icon" id="modal-icon">✅</div>
+    <h2 id="modal-title">Gespeichert!</h2>
+    <div class="modal-id" id="savedId">…</div>
+    <p id="modal-subtitle">Wiedervorlage anlegen, um den Effekt später zu dokumentieren?</p>
+
+    <div id="followup-section">
+      <div class="followup-options">
+        <button class="followup-btn" onclick="selectDays(7, this)">
+          In 7 Tagen erinnern <span class="days">+7d</span>
+        </button>
+        <button class="followup-btn" onclick="selectDays(14, this)">
+          In 14 Tagen erinnern <span class="days">+14d</span>
+        </button>
+        <button class="followup-btn" onclick="selectDays(30, this)">
+          In 30 Tagen erinnern <span class="days">+30d</span>
+        </button>
+      </div>
+
+      <div class="custom-date-row" id="customDateRow" onclick="selectCustomDate()">
+        <span>Fixes Datum wählen</span>
+        <input type="date" id="customDate"
+          onclick="event.stopPropagation()"
+          onchange="selectCustomDate()">
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()" id="modal-skip-btn">Ohne Wiedervorlage</button>
+      <button class="btn-primary" id="confirmBtn" disabled onclick="saveFollowupAndClose()">Wiedervorlage speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Auth (localStorage, 30 Tage) ────────────────────────────
+  const AUTH_KEY = "adlog_auth";
+  const AUTH_DAYS = 30;
+
+  function isLoggedIn() {
+    try {
+      const raw = localStorage.getItem(AUTH_KEY);
+      if (!raw) return false;
+      const { expires } = JSON.parse(raw);
+      return Date.now() < expires;
+    } catch { return false; }
+  }
+
+  function setLoggedIn() {
+    const expires = Date.now() + AUTH_DAYS * 24 * 60 * 60 * 1000;
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ expires }));
+  }
+
+  if (isLoggedIn()) {
+    document.getElementById("password-screen").classList.add("hidden");
+    document.getElementById("main-content").style.display = "block";
+  }
+
+  async function checkPassword() {
+    const res = await fetch("/api/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: document.getElementById("pw-input").value })
+    });
+    if (res.ok) {
+      setLoggedIn();
+      document.getElementById("password-screen").classList.add("hidden");
+      document.getElementById("main-content").style.display = "block";
+    } else {
+      document.getElementById("pw-error").style.display = "block";
+    }
+  }
+  document.getElementById("pw-input").addEventListener("keypress", e => {
+    if (e.key === "Enter") checkPassword();
+  });
+
+  // ── Typ-Toggle (CHG / OBS) ───────────────────────────────────
+  let currentType = 'CHG';
+
+  function switchType(type) {
+    currentType = type;
+    const isCHG = type === 'CHG';
+    document.getElementById('btn-chg').classList.toggle('active', isCHG);
+    document.getElementById('btn-obs').classList.toggle('active', !isCHG);
+    document.getElementById('desc-label').innerText = isCHG ? 'Änderungsbeschreibung' : 'Was beobachtest du?';
+    document.getElementById('description').placeholder = isCHG ? 'Was wurde geändert?' : 'z.B. CPC steigt seit 3 Tagen, Grund unklar…';
+    document.getElementById('notes-label').innerText = isCHG ? 'Notizen / Effekte' : 'Erste Einschätzung / Hypothese';
+    document.getElementById('notes').placeholder = isCHG ? 'Optionale Beobachtungen…' : 'Optionale Hypothese…';
+    document.getElementById('save-btn').innerText = isCHG ? 'Änderung speichern' : 'Beobachtung speichern';
+  }
+
+  // ── Tags ────────────────────────────────────────────────────
+  const availableTags = ['Budget', 'Zielgruppe', 'Creative', 'Bidding', 'Keywords', 'Ausschlüsse'];
+  let selectedTags = [];
+  document.getElementById('date').valueAsDate = new Date();
+  availableTags.forEach(t => {
+    const span = document.createElement('span');
+    span.className = 'tag'; span.innerText = t;
+    span.onclick = () => {
+      span.classList.toggle('active');
+      selectedTags = selectedTags.includes(t) ? selectedTags.filter(i => i !== t) : [...selectedTags, t];
+    };
+    document.getElementById('tagList').appendChild(span);
+  });
+
+  // ── Followup-Datum-Auswahl ───────────────────────────────────
+  let selectedFollowupDate = null;
+  let lastSavedId = null;
+
+  function setConfirmEnabled() {
+    document.getElementById('confirmBtn').disabled = !selectedFollowupDate;
+  }
+
+  function selectDays(days, btn) {
+    document.querySelectorAll('.followup-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('customDateRow').classList.remove('selected');
+    document.getElementById('customDate').value = '';
+    btn.classList.add('selected');
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    selectedFollowupDate = d.toISOString().split('T')[0];
+    setConfirmEnabled();
+  }
+
+  function selectCustomDate() {
+    const val = document.getElementById('customDate').value;
+    document.querySelectorAll('.followup-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('customDateRow').classList.add('selected');
+    selectedFollowupDate = val || null;
+    setConfirmEnabled();
+  }
+
+  // ── Modal ────────────────────────────────────────────────────
+  function openModal(savedId, isOBS) {
+    document.getElementById('savedId').innerText = savedId;
+    document.getElementById('modal-icon').innerText = isOBS ? '👁' : '✅';
+    document.getElementById('modal-title').innerText = 'Gespeichert!';
+    document.getElementById('modal-subtitle').innerText = isOBS
+      ? 'Wiedervorlage anlegen, um die Beobachtung später zu bewerten?'
+      : 'Wiedervorlage anlegen, um den Effekt später zu dokumentieren?';
+    document.getElementById('modal-skip-btn').innerText = isOBS ? 'Ohne Wiedervorlage' : 'Ohne Wiedervorlage';
+    document.getElementById('confirmBtn').innerText = 'Wiedervorlage speichern';
+    selectedFollowupDate = null;
+    document.querySelectorAll('.followup-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('customDateRow').classList.remove('selected');
+    document.getElementById('customDate').value = '';
+    document.getElementById('confirmBtn').disabled = true;
+    document.getElementById('successModal').classList.add('visible');
+  }
+
+  function closeModal() {
+    document.getElementById('successModal').classList.remove('visible');
+    location.reload();
+  }
+
+  async function saveFollowupAndClose() {
+    if (!selectedFollowupDate || !lastSavedId) return closeModal();
+    const btn = document.getElementById('confirmBtn');
+    btn.disabled = true;
+    btn.innerText = 'Speichert…';
+    try {
+      await fetch("/api/followup", {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chgId: lastSavedId, followupDate: selectedFollowupDate })
+      });
+    } catch(e) { console.error(e); }
+    closeModal();
+  }
+
+  // ── Haupteintrag speichern ───────────────────────────────────
+  async function sendData() {
+    const btn = document.getElementById('save-btn');
+    const status = document.getElementById('status');
+    const description = document.getElementById('description').value;
+    if (!description) return alert("Bitte eine Beschreibung eingeben.");
+
+    btn.disabled = true;
+    btn.innerText = "Speichert…";
+    status.style.display = "block";
+
+    const payload = {
+      type: currentType,
+      date: document.getElementById('date').value,
+      platform: document.getElementById('platform').value,
+      account: document.getElementById('account').value,
+      campaign: document.getElementById('campaign').value,
+      description,
+      notes: document.getElementById('notes').value,
+      tags: selectedTags.join(', ')
+    };
+
+    try {
+      const response = await fetch("/api/save", {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      lastSavedId = result.id || (currentType + '-???');
+
+      status.style.display = "none";
+      btn.disabled = false;
+      btn.innerText = currentType === 'CHG' ? 'Änderung speichern' : 'Beobachtung speichern';
+      openModal(lastSavedId, currentType === 'OBS');
+
+    } catch (e) {
+      alert("Fehler beim Speichern: " + e);
+      btn.disabled = false;
+      btn.innerText = "Erneut versuchen";
+      status.style.display = "none";
+    }
+  }
+</script>
+</body>
+</html>
