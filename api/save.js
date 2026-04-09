@@ -17,8 +17,10 @@ export default async function handler(req, res) {
       .select('id')
       .like('id', prefix + '-%');
 
-    const nextNum = (existing ? existing.length : 0) + 1;
-    const id = prefix + '-' + String(nextNum).padStart(3, '0');
+    const maxNum = existing && existing.length > 0
+      ? Math.max(...existing.map(r => parseInt(r.id.split('-')[1]) || 0))
+      : 0;
+    const id = prefix + '-' + String(maxNum + 1).padStart(3, '0');
 
     const campaignNorm = campaign
       ? campaign.toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_')
